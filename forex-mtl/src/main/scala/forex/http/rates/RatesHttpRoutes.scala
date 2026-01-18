@@ -17,9 +17,14 @@ class RatesHttpRoutes[F[_]: Sync](rates: RatesProgram[F]) extends Http4sDsl[F] {
 
   private val httpRoutes: HttpRoutes[F] = HttpRoutes.of[F] {
     case GET -> Root :? FromQueryParam(from) +& ToQueryParam(to) =>
-      rates.get(RatesProgramProtocol.GetRatesRequest(from, to)).flatMap(Sync[F].fromEither).flatMap { rate =>
-        Ok(rate.asGetApiResponse)
+    rates.get(RatesProgramProtocol.GetRatesRequest(from, to)).flatMap {
+      case Right(rate) => Ok(rate.asGetApiResponse)
+      case Left(error) => error match {
+        case forex.programs.rates.errors.Error.RateLookupFailed(msg) => BadRequest(msg)
+        // Add more cases if there are other error types in errors.scala
+        case _ => InternalServerError("Unexpected error")  // Fallback
       }
+    }
   }
 
   val routes: HttpRoutes[F] = Router(

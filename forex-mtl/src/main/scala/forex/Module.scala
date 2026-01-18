@@ -1,6 +1,11 @@
 package forex
 
-import cats.effect.{ Concurrent, Timer }
+import org.http4s.client.blaze.BlazeClientBuilder
+import scala.concurrent.ExecutionContext.Implicits.global
+import cats.effect.{Concurrent, ConcurrentEffect, Timer}
+import cats.effect.syntax.concurrent._
+import cats.syntax.functor._
+import cats.syntax.flatMap._
 import forex.config.ApplicationConfig
 import forex.http.rates.RatesHttpRoutes
 import forex.services._
@@ -8,10 +13,18 @@ import forex.programs._
 import org.http4s._
 import org.http4s.implicits._
 import org.http4s.server.middleware.{ AutoSlash, Timeout }
+import forex.services.rates.interpreters.OneFrameLive  // ← Add this import
 
-class Module[F[_]: Concurrent: Timer](config: ApplicationConfig) {
+class Module[F[_]: Timer: ConcurrentEffect](config: ApplicationConfig) {
 
-  private val ratesService: RatesService[F] = RatesServices.dummy[F]
+  // private val ratesService: RatesService[F] = RatesServices.dummy[F]
+
+  // When ready, switch to live:
+  private val ratesService: RatesService[F] = {
+    val clientResource = BlazeClientBuilder[F](global).resource
+    val (client, _) = implicitly[ConcurrentEffect[F]].toIO(clientResource.allocated).unsafeRunSync()
+    RatesServices.live[F](client)
+  }
 
   private val ratesProgram: RatesProgram[F] = RatesProgram[F](ratesService)
 
@@ -34,4 +47,13 @@ class Module[F[_]: Concurrent: Timer](config: ApplicationConfig) {
 
   val httpApp: HttpApp[F] = appMiddleware(routesMiddleware(http).orNotFound)
 
+  // Public method to start background refresh (returns F[Unit] for use in Stream)
+  def startBackgroundRefresh: F[Unit] =
+    ratesService match {
+      case live: OneFrameLive[F] => live.refreshAll.flatMap { _ =>
+        live.refreshStream.compile.drain.start.void
+      }
+      case _ =>
+        Concurrent[F].unit
+    }
 }
