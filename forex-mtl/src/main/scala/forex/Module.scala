@@ -13,9 +13,9 @@ import forex.programs._
 import org.http4s._
 import org.http4s.implicits._
 import org.http4s.server.middleware.{ AutoSlash, Timeout }
-import forex.services.rates.interpreters.OneFrameLive  // ← Add this import
+import forex.services.rates.interpreters.OneFrameLive
 
-class Module[F[_]: Timer: ConcurrentEffect](config: ApplicationConfig) {
+class Module[F[_]: Concurrent: Timer: ConcurrentEffect](config: ApplicationConfig) {
 
   // private val ratesService: RatesService[F] = RatesServices.dummy[F]
 
@@ -50,9 +50,10 @@ class Module[F[_]: Timer: ConcurrentEffect](config: ApplicationConfig) {
   // Public method to start background refresh (returns F[Unit] for use in Stream)
   def startBackgroundRefresh: F[Unit] =
     ratesService match {
-      case live: OneFrameLive[F] => live.refreshAll.flatMap { _ =>
-        live.refreshStream.compile.drain.start.void
-      }
+      case live: OneFrameLive[F] => 
+        live.refreshAll.flatMap { _ =>
+          live.refreshStream.compile.drain.start.void
+        }
       case _ =>
         Concurrent[F].unit
     }
