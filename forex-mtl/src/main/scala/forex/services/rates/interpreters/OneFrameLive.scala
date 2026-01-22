@@ -66,7 +66,7 @@ final class OneFrameLive[F[_]: Concurrent: Timer](client: Client[F], token: Stri
       map.get(pair) match {
         case Some(rate) if rate.timestamp.isFresh(5.minutes) => 
           Right(rate)
-        case Some(rate) => 
+        case Some(_) => 
           Left(serviceErrors.Error.RateLookupFailed(s"Rate for ${pair.from.show}${pair.to.show} is stale"))
         case None => 
           Left(serviceErrors.Error.RateLookupFailed(s"Rate for ${pair.from.show}${pair.to.show} not available"))

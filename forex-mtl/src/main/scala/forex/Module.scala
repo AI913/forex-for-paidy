@@ -17,7 +17,7 @@ import forex.services.rates.interpreters.OneFrameLive
 import scala.io.Source
 import java.io.File
 
-class Module[F[_]: Concurrent: Timer: ConcurrentEffect](config: ApplicationConfig) {
+class Module[F[_]: Timer: ConcurrentEffect](config: ApplicationConfig) {
 
   // private val ratesService: RatesService[F] = RatesServices.dummy[F]
 
