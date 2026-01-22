@@ -31,7 +31,7 @@ class Module[F[_]: Timer: ConcurrentEffect](config: ApplicationConfig) {
       throw new RuntimeException(".env file not found")
     }
   }
-  // When ready, switch to live:
+  
   private val ratesService: RatesService[F] = {
     val clientResource = BlazeClientBuilder[F](global).resource
     val (client, _) = implicitly[ConcurrentEffect[F]].toIO(clientResource.allocated).unsafeRunSync()
