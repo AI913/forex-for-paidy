@@ -9,6 +9,6 @@ object Interpreters {
   def dummy[F[_]: Applicative]: Algebra[F] = new OneFrameDummy[F]()
 
   // def live[F[_]: Applicative]: Algebra[F] = dummy[F]  // stub
-  def live[F[_]: Concurrent: Timer](client: Client[F]): Algebra[F] =
-  new OneFrameLive[F](client)
+  def live[F[_]: Concurrent: Timer](client: Client[F], token: String): Algebra[F] =
+  new OneFrameLive[F](client, token)
 }

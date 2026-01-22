@@ -13,10 +13,9 @@ import scala.concurrent.duration._
 import forex.domain._
 import forex.services.rates.{Algebra, errors => serviceErrors}
 
-final class OneFrameLive[F[_]: Concurrent: Timer](client: Client[F]) extends Algebra[F] {
+final class OneFrameLive[F[_]: Concurrent: Timer](client: Client[F], token: String) extends Algebra[F] {
 
   private val baseUri = uri"http://localhost:8080/rates"
-  private val token = "10dc303535874aeccc86a8251e6992f5"
 
   private val currencies = List(
     Currency.AUD, Currency.CAD, Currency.CHF, Currency.EUR, 

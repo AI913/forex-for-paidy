@@ -14,16 +14,29 @@ import org.http4s._
 import org.http4s.implicits._
 import org.http4s.server.middleware.{ AutoSlash, Timeout }
 import forex.services.rates.interpreters.OneFrameLive
+import scala.io.Source
+import java.io.File
 
 class Module[F[_]: Concurrent: Timer: ConcurrentEffect](config: ApplicationConfig) {
 
   // private val ratesService: RatesService[F] = RatesServices.dummy[F]
 
+  private def loadEnvToken: String = {
+    val envFile = new File(".env")
+    if (envFile.exists) {
+      Source.fromFile(envFile).getLines().find(_.startsWith("ONE_FRAME_TOKEN=")).map { line =>
+        line.split("=", 2)(1).trim
+      }.getOrElse(throw new RuntimeException("ONE_FRAME_TOKEN not found in .env"))
+    } else {
+      throw new RuntimeException(".env file not found")
+    }
+  }
   // When ready, switch to live:
   private val ratesService: RatesService[F] = {
     val clientResource = BlazeClientBuilder[F](global).resource
     val (client, _) = implicitly[ConcurrentEffect[F]].toIO(clientResource.allocated).unsafeRunSync()
-    RatesServices.live[F](client)
+    val token = loadEnvToken
+    RatesServices.live[F](client, token)
   }
 
   private val ratesProgram: RatesProgram[F] = RatesProgram[F](ratesService)
