@@ -11,3 +11,5 @@ case class HttpConfig(
     port: Int,
     timeout: FiniteDuration
 )
+
+case class OneFrameConfig(token: String)
