@@ -67,5 +67,6 @@ libraryDependencies ++= Seq(
   Libraries.scalaCheck     % Test,
   Libraries.catsScalaCheck % Test,
   "org.http4s" %% "http4s-blaze-client" % "0.22.15",
-  "org.http4s" %% "http4s-circe"        % "0.22.15"
+  "org.http4s" %% "http4s-circe"        % "0.22.15",
+  "com.github.cb372" %% "cats-retry" % "3.1.0"
 )
