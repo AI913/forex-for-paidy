@@ -9,6 +9,8 @@ import org.http4s.{Method, Request, Query}
 import org.http4s.circe._
 import org.http4s.implicits._
 import io.circe.generic.auto._
+import retry.RetryPolicies
+import retry.syntax.all._
 import scala.concurrent.duration._
 import forex.domain._
 import forex.services.rates.{Algebra, errors => serviceErrors}
@@ -44,7 +46,10 @@ final class OneFrameLive[F[_]: Concurrent: Timer](client: Client[F], token: Stri
       implicit val decoder: org.http4s.EntityDecoder[F, List[OneFrameResponse]] = 
         jsonOf[F, List[OneFrameResponse]]
 
-      client.expect[List[OneFrameResponse]](request).flatMap { responses =>
+      client.expect[List[OneFrameResponse]](request).retryingOnAllErrors(
+        policy = RetryPolicies.exponentialBackoff(1.second, maxAttempts = 5),
+        onError = (e, details) => Concurrent[F].delay(println(s"Retry failed: ${e.getMessage}, attempt ${details.retriesSoFar}"))
+      ).flatMap { responses =>
         Concurrent[F].delay(println(s"Fetched ${responses.size} rates from One-Frame API")).flatMap { _ =>
           val newMap = responses.map { r =>
             val pair = Rate.Pair(Currency.fromString(r.from), Currency.fromString(r.to))
